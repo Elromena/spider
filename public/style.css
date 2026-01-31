@@ -1872,6 +1872,98 @@ body {
         padding: 0.75rem;
     }
     
+    .sitemap-stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .sitemap-stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .sitemap-url-list {
+        max-height: 150px;
+    }
+    
+    .sitemap-url-item {
+        font-size: 0.75rem;
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .sitemap-missing-section h3,
+    .sitemap-extra-section h3 {
+        font-size: 0.85rem;
+    }
+    
+    /* Progress body adjustments */
+    .progress-body {
+        padding: 1rem;
+    }
+    
+    .progress-url {
+        font-size: 0.75rem;
+        max-height: 50px;
+    }
+    
+    .progress-log {
+        max-height: 120px;
+        font-size: 0.7rem;
+    }
+    
+    /* Modal header */
+    .modal-header h2 {
+        font-size: 1rem;
+    }
+    
+    /* Modal form in Add Site */
+    .modal .form-group label {
+        font-size: 0.75rem;
+    }
+    
+    .modal .form-group input,
+    .modal .form-group select {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .modal .input-hint {
+        font-size: 0.7rem;
+    }
+    
+    .modal .checkbox-text {
+        font-size: 0.85rem;
+    }
+    
+    /* Health progress */
+    .health-progress {
+        padding: 1rem;
+    }
+    
+    .health-progress-text {
+        font-size: 0.9rem;
+    }
+    
+    /* Saved reports in sidebar */
+    .reports-list {
+        max-height: none;
+    }
+    
+    .report-card {
+        padding: 0.75rem;
+    }
+    
+    .report-card-name {
+        font-size: 0.8rem;
+    }
+    
+    .report-card-meta {
+        font-size: 0.65rem;
+    }
+    
+    /* Status reports list */
+    .status-reports-list {
+        max-height: none;
+    }
+    
     /* Toast */
     .toast-container {
         left: 1rem;
@@ -1957,6 +2049,99 @@ body {
     }
 }
 
+/* Additional 480px refinements */
+@media (max-width: 480px) {
+    /* Input hints */
+    .input-hint {
+        font-size: 0.65rem;
+    }
+    
+    /* Checkbox text */
+    .checkbox-text {
+        font-size: 0.8rem;
+    }
+    
+    /* Sitemap stats */
+    .sitemap-stat {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+    
+    .sitemap-stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .sitemap-stat-label {
+        font-size: 0.65rem;
+    }
+    
+    /* Sitemap URL items */
+    .sitemap-url-item {
+        font-size: 0.7rem;
+    }
+    
+    /* Sitemap button full width */
+    .sitemap-missing-section button,
+    .sitemap-extra-section button {
+        width: 100%;
+    }
+    
+    /* Progress modal */
+    .progress-header h2 {
+        font-size: 0.9rem;
+    }
+    
+    .progress-url {
+        font-size: 0.7rem;
+    }
+    
+    .progress-log {
+        max-height: 100px;
+        font-size: 0.7rem;
+    }
+    
+    /* Status progress text */
+    .status-progress .progress-text {
+        font-size: 0.8rem;
+    }
+    
+    /* Health progress */
+    .health-progress-text {
+        font-size: 0.85rem;
+    }
+    
+    /* Form actions in modals */
+    .modal .form-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .modal .form-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Reports list cards in sidebar */
+    .reports-list .report-card,
+    .status-reports-list .report-card {
+        padding: 0.75rem;
+    }
+    
+    .report-card-name {
+        font-size: 0.75rem;
+    }
+    
+    .report-card-stats {
+        font-size: 0.65rem;
+    }
+    
+    /* Sitemap error */
+    .sitemap-error {
+        padding: 1rem;
+        font-size: 0.85rem;
+    }
+}
+
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
     /* Larger touch targets */
@@ -1966,6 +2151,11 @@ body {
     
     .btn-sm {
         min-height: 36px;
+    }
+    
+    .btn-close {
+        min-width: 40px;
+        min-height: 40px;
     }
     
     .site-card {
@@ -1984,6 +2174,17 @@ body {
         min-height: 44px;
     }
     
+    /* Page group toggle */
+    .page-group-header {
+        min-height: 48px;
+    }
+    
+    /* Filter buttons */
+    .filter-btn {
+        min-height: 40px;
+        padding: 0.5rem 0.75rem;
+    }
+    
     /* Remove hover effects for touch */
     .btn-primary:hover {
         transform: none;
@@ -1991,6 +2192,10 @@ body {
     
     .site-card:hover {
         box-shadow: none;
+    }
+    
+    .page-group-header:hover {
+        background: var(--bg-tertiary);
     }
     
     /* Show delete button always on touch */

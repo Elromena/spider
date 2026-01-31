@@ -3,6 +3,9 @@
 ## 2026-01-31
 - Add multi-tool navigation system with tabs in the header.
 - Add Status Code Validator tool for batch URL checking.
+- Add report saving and tracking for Status Validator with shareable links.
+- Add re-check functionality when marking items as done.
+- Add full responsive design across entire app (mobile, tablet, desktop).
 - Remove temporary debug instrumentation that recreated `.cursor/debug.log`.
 - Add Railway deployment configs and Chromium settings for Puppeteer.
 
