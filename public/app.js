@@ -281,7 +281,15 @@ function setupEventListeners() {
     elements.statusFilterSelect?.addEventListener('change', () => filterStatusResults());
     
     // Save status report
-    elements.saveStatusReportBtn?.addEventListener('click', saveStatusReport);
+    if (elements.saveStatusReportBtn) {
+        console.log('Save button found, attaching listener');
+        elements.saveStatusReportBtn.addEventListener('click', () => {
+            console.log('Save button clicked');
+            saveStatusReport();
+        });
+    } else {
+        console.error('Save button not found!');
+    }
     
     // Export status CSV
     elements.exportStatusCsvBtn?.addEventListener('click', exportStatusCsv);
@@ -500,14 +508,24 @@ function exportStatusCsv() {
 
 // ===== Status Reports =====
 async function saveStatusReport() {
+    console.log('saveStatusReport called, statusResults:', statusResults.length);
+    
     if (statusResults.length === 0) {
         showToast('No results to save', 'warning');
         return;
     }
     
-    const name = prompt('Enter a name for this report:', `Status Check ${new Date().toLocaleString()}`);
-    if (name === null) return; // Cancelled
+    // Use a simple default name if prompt is blocked
+    let name = `Status Check ${new Date().toLocaleString()}`;
+    try {
+        const promptResult = prompt('Enter a name for this report:', name);
+        if (promptResult === null) return; // Cancelled
+        if (promptResult) name = promptResult;
+    } catch (e) {
+        console.log('Prompt blocked, using default name');
+    }
     
+    console.log('Saving report with name:', name);
     elements.saveStatusReportBtn.disabled = true;
     elements.saveStatusReportBtn.innerHTML = '<span class="pulse-dot"></span> Saving...';
     
@@ -515,9 +533,11 @@ async function saveStatusReport() {
         const response = await fetch('/api/status-reports', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name || undefined, results: statusResults })
+            body: JSON.stringify({ name, results: statusResults })
         });
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
         
         if (data.success) {
             showToast('Report saved! You can share the link.', 'success');
@@ -529,7 +549,8 @@ async function saveStatusReport() {
             showToast(data.error || 'Failed to save report', 'error');
         }
     } catch (error) {
-        showToast('Failed to save report', 'error');
+        console.error('Save error:', error);
+        showToast('Failed to save report: ' + error.message, 'error');
     } finally {
         elements.saveStatusReportBtn.disabled = false;
         elements.saveStatusReportBtn.innerHTML = `
