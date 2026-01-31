@@ -87,6 +87,54 @@ function saveReportData({ site, locale, report }) {
     return { reportId, reportData, reportPath };
 }
 
+async function mapWithLimit(items, limit, worker) {
+    const results = new Array(items.length);
+    let index = 0;
+    const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (index < items.length) {
+            const currentIndex = index++;
+            results[currentIndex] = await worker(items[currentIndex], currentIndex);
+        }
+    });
+    await Promise.all(runners);
+    return results;
+}
+
+async function fetchUrlStatus(targetUrl) {
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(targetUrl);
+    } catch {
+        return { url: targetUrl, error: 'Invalid URL' };
+    }
+
+    const attempt = async (method) => {
+        return fetch(parsedUrl.toString(), {
+            method,
+            redirect: 'follow',
+            signal: AbortSignal.timeout(15000)
+        });
+    };
+
+    try {
+        let response;
+        try {
+            response = await attempt('HEAD');
+        } catch {
+            response = await attempt('GET');
+        }
+        return {
+            url: targetUrl,
+            status: response.status,
+            ok: response.ok,
+            finalUrl: response.url,
+            redirected: response.redirected
+        };
+    } catch (error) {
+        return { url: targetUrl, error: error.message || 'Request failed' };
+    }
+}
+
 // ============================================
 // INDEX API - For instant searching
 // ============================================
@@ -290,6 +338,30 @@ app.get('/api/search', (req, res) => {
     } catch (error) {
         console.error('Search error:', error);
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ============================================
+// STATUS CODE VALIDATOR
+// ============================================
+app.post('/api/status-check', async (req, res) => {
+    try {
+        const urls = Array.isArray(req.body?.urls) ? req.body.urls : [];
+        const cleaned = urls
+            .map((value) => String(value || '').trim())
+            .filter(Boolean);
+
+        if (cleaned.length === 0) {
+            return res.status(400).json({ success: false, error: 'No URLs provided.' });
+        }
+        if (cleaned.length > 500) {
+            return res.status(400).json({ success: false, error: 'Please limit to 500 URLs per batch.' });
+        }
+
+        const results = await mapWithLimit(cleaned, 5, fetchUrlStatus);
+        res.json({ success: true, results });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message || 'Status check failed.' });
     }
 });
 

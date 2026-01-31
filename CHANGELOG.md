@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-01-31
+- Add multi-tool navigation system with tabs in the header.
+- Add Status Code Validator tool for batch URL checking.
 - Remove temporary debug instrumentation that recreated `.cursor/debug.log`.
 - Add Railway deployment configs and Chromium settings for Puppeteer.
 

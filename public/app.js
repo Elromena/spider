@@ -1,5 +1,5 @@
-// ===== SPIDER - Link Auditor - Frontend JS =====
-// Index-first approach: must index before searching
+// ===== SPIDER - SEO Tools - Frontend JS =====
+// Multi-tool application with Link Auditor and Status Validator
 
 const socket = io();
 
@@ -14,9 +14,16 @@ let lastSpeedCheck = null;
 let missingUrls = [];
 let healthReports = [];
 let lastHealthReport = null;
+let statusResults = [];
+let currentTool = 'auditor';
 
 // DOM Elements
 const elements = {
+    // Tool navigation
+    toolNavBtns: document.querySelectorAll('.tool-nav-btn'),
+    auditorView: document.getElementById('auditorView'),
+    statusView: document.getElementById('statusView'),
+    
     // Sites panel
     sitesList: document.getElementById('sitesList'),
     noSitesMessage: document.getElementById('noSitesMessage'),
@@ -113,7 +120,26 @@ const elements = {
     
     // Reports list
     reportsList: document.getElementById('reportsList'),
-    noReportsMessage: document.getElementById('noReportsMessage')
+    noReportsMessage: document.getElementById('noReportsMessage'),
+
+    // Status code validator (new layout)
+    statusUrls: document.getElementById('statusUrls'),
+    urlCountBadge: document.getElementById('urlCountBadge'),
+    runStatusCheckBtn: document.getElementById('runStatusCheckBtn'),
+    clearStatusUrlsBtn: document.getElementById('clearStatusUrlsBtn'),
+    status2xxCount: document.getElementById('status2xxCount'),
+    status3xxCount: document.getElementById('status3xxCount'),
+    status4xxCount: document.getElementById('status4xxCount'),
+    status5xxCount: document.getElementById('status5xxCount'),
+    statusErrorCount: document.getElementById('statusErrorCount'),
+    statusProgress: document.getElementById('statusProgress'),
+    statusProgressCount: document.getElementById('statusProgressCount'),
+    statusProgressTotal: document.getElementById('statusProgressTotal'),
+    statusProgressBar: document.getElementById('statusProgressBar'),
+    statusFilterInput: document.getElementById('statusFilterInput'),
+    statusFilterSelect: document.getElementById('statusFilterSelect'),
+    exportStatusCsvBtn: document.getElementById('exportStatusCsvBtn'),
+    statusResultsList: document.getElementById('statusResultsList')
 };
 
 // Initialize
@@ -124,8 +150,32 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSocketListeners();
 });
 
+// ===== Tool Navigation =====
+function switchTool(toolName) {
+    currentTool = toolName;
+    
+    // Update nav buttons
+    elements.toolNavBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tool === toolName);
+    });
+    
+    // Update views
+    elements.auditorView.classList.toggle('active', toolName === 'auditor');
+    elements.statusView.classList.toggle('active', toolName === 'status');
+    
+    // Show/hide "Index New Site" button based on tool
+    elements.addSiteBtn.style.display = toolName === 'auditor' ? '' : 'none';
+}
+
 // ===== Event Listeners =====
 function setupEventListeners() {
+    // Tool navigation
+    elements.toolNavBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchTool(btn.dataset.tool);
+        });
+    });
+    
     // Add site modal
     elements.addSiteBtn.addEventListener('click', () => {
         elements.addSiteModal.classList.remove('hidden');
@@ -209,6 +259,232 @@ function setupEventListeners() {
         elements.sitemapModal.classList.add('hidden');
     });
     elements.indexMissingBtn.addEventListener('click', indexMissingUrls);
+
+    // Status code validator
+    elements.runStatusCheckBtn.addEventListener('click', handleStatusCheck);
+    elements.clearStatusUrlsBtn?.addEventListener('click', clearStatusCheck);
+    
+    // URL count badge - update on input
+    elements.statusUrls?.addEventListener('input', () => {
+        const urls = parseStatusUrls(elements.statusUrls.value);
+        elements.urlCountBadge.textContent = `${urls.length} URL${urls.length !== 1 ? 's' : ''}`;
+    });
+    
+    // Status filter
+    elements.statusFilterInput?.addEventListener('input', () => filterStatusResults());
+    elements.statusFilterSelect?.addEventListener('change', () => filterStatusResults());
+    
+    // Export status CSV
+    elements.exportStatusCsvBtn?.addEventListener('click', exportStatusCsv);
+}
+
+function parseStatusUrls(input) {
+    return (input || '')
+        .split(/[\n,\s]+/)
+        .map((entry) => entry.trim())
+        .filter(entry => entry && entry.includes('.'))
+        .map((entry) => (/^https?:\/\//i.test(entry) ? entry : `https://${entry}`));
+}
+
+async function handleStatusCheck() {
+    const urls = parseStatusUrls(elements.statusUrls.value);
+    if (urls.length === 0) {
+        showToast('Paste at least one URL to validate.', 'warning');
+        return;
+    }
+    if (urls.length > 500) {
+        showToast('Please limit to 500 URLs per batch.', 'warning');
+        return;
+    }
+
+    // Disable button and show progress
+    elements.runStatusCheckBtn.disabled = true;
+    elements.runStatusCheckBtn.innerHTML = '<span class="pulse-dot"></span> Checking...';
+    elements.statusProgress.classList.remove('hidden');
+    elements.statusProgressCount.textContent = '0';
+    elements.statusProgressTotal.textContent = urls.length;
+    elements.statusProgressBar.style.width = '0%';
+    
+    // Clear previous results
+    elements.statusResultsList.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><h3>Checking URLs...</h3><p>This may take a moment</p></div>';
+
+    try {
+        const response = await fetch('/api/status-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.error || 'Status check failed');
+        }
+        statusResults = payload.results || [];
+        renderStatusResults(statusResults);
+        updateStatusSummary(statusResults);
+        elements.exportStatusCsvBtn.disabled = statusResults.length === 0;
+        showToast(`Checked ${statusResults.length} URLs`, 'success');
+    } catch (error) {
+        statusResults = [];
+        elements.statusResultsList.innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><h3>Check Failed</h3><p>' + escapeHtml(error.message || 'Unknown error') + '</p></div>';
+        showToast(error.message || 'Status check failed.', 'error');
+    } finally {
+        elements.runStatusCheckBtn.disabled = false;
+        elements.runStatusCheckBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22,4 12,14.01 9,11.01"/>
+            </svg>
+            Validate Status Codes
+        `;
+        elements.statusProgress.classList.add('hidden');
+    }
+}
+
+function clearStatusCheck() {
+    elements.statusUrls.value = '';
+    elements.urlCountBadge.textContent = '0 URLs';
+    elements.statusFilterInput.value = '';
+    elements.statusFilterSelect.value = '';
+    statusResults = [];
+    updateStatusSummary([]);
+    elements.exportStatusCsvBtn.disabled = true;
+    elements.statusResultsList.innerHTML = `
+        <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No results yet</h3>
+            <p>Paste URLs on the left and click "Validate Status Codes"</p>
+        </div>
+    `;
+}
+
+function filterStatusResults() {
+    const textQuery = (elements.statusFilterInput?.value || '').toLowerCase();
+    const statusFilter = elements.statusFilterSelect?.value || '';
+    
+    const filtered = statusResults.filter((result) => {
+        // Text filter
+        const matchesText = !textQuery || 
+            result.url.toLowerCase().includes(textQuery) || 
+            (result.status && String(result.status).includes(textQuery));
+        
+        // Status filter
+        let matchesStatus = true;
+        if (statusFilter) {
+            if (statusFilter === 'error') {
+                matchesStatus = result.error || result.status == null;
+            } else if (statusFilter === '2xx') {
+                matchesStatus = result.status >= 200 && result.status < 300;
+            } else if (statusFilter === '3xx') {
+                matchesStatus = result.status >= 300 && result.status < 400;
+            } else if (statusFilter === '4xx') {
+                matchesStatus = result.status >= 400 && result.status < 500;
+            } else if (statusFilter === '5xx') {
+                matchesStatus = result.status >= 500;
+            }
+        }
+        
+        return matchesText && matchesStatus;
+    });
+    
+    renderStatusResults(filtered);
+}
+
+function summarizeStatusResults(results) {
+    return results.reduce((acc, result) => {
+        if (result.error || result.status == null) {
+            acc.error += 1;
+        } else if (result.status >= 200 && result.status < 300) {
+            acc.s2xx += 1;
+        } else if (result.status >= 300 && result.status < 400) {
+            acc.s3xx += 1;
+        } else if (result.status >= 400 && result.status < 500) {
+            acc.s4xx += 1;
+        } else if (result.status >= 500) {
+            acc.s5xx += 1;
+        }
+        return acc;
+    }, { s2xx: 0, s3xx: 0, s4xx: 0, s5xx: 0, error: 0 });
+}
+
+function updateStatusSummary(results) {
+    const summary = summarizeStatusResults(results);
+    elements.status2xxCount.textContent = summary.s2xx;
+    elements.status3xxCount.textContent = summary.s3xx;
+    elements.status4xxCount.textContent = summary.s4xx;
+    elements.status5xxCount.textContent = summary.s5xx;
+    elements.statusErrorCount.textContent = summary.error;
+}
+
+function renderStatusResults(results) {
+    if (!results.length) {
+        elements.statusResultsList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>No matches</h3>
+                <p>No URLs match your current filter</p>
+            </div>
+        `;
+        return;
+    }
+    
+    elements.statusResultsList.innerHTML = results.map((result) => {
+        const status = result.status;
+        const isError = result.error || status == null;
+        
+        let badgeClass = 'error';
+        if (!isError) {
+            if (status >= 200 && status < 300) badgeClass = 's2xx';
+            else if (status >= 300 && status < 400) badgeClass = 's3xx';
+            else if (status >= 400 && status < 500) badgeClass = 's4xx';
+            else if (status >= 500) badgeClass = 's5xx';
+        }
+        
+        const badgeLabel = isError ? 'ERR' : status;
+        
+        let meta = '';
+        if (result.error) {
+            meta = escapeHtml(result.error);
+        } else if (result.finalUrl && result.finalUrl !== result.url) {
+            meta = `→ ${escapeHtml(result.finalUrl)}`;
+        } else if (result.time) {
+            meta = `${result.time}ms`;
+        }
+
+        return `
+            <div class="status-result-item" data-status="${status || 'error'}" data-url="${escapeHtml(result.url)}">
+                <span class="status-code-badge ${badgeClass}">${badgeLabel}</span>
+                <span class="status-result-url">${escapeHtml(result.url)}</span>
+                ${meta ? `<span class="status-result-meta">${meta}</span>` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function exportStatusCsv() {
+    if (statusResults.length === 0) return;
+    
+    const headers = ['URL', 'Status', 'Final URL', 'Error', 'Time (ms)'];
+    const rows = statusResults.map(r => [
+        r.url,
+        r.status || '',
+        r.finalUrl || '',
+        r.error || '',
+        r.time || ''
+    ]);
+    
+    const content = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+    
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `status-check-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast(`Exported ${statusResults.length} results to CSV`, 'success');
 }
 
 // ===== Socket Listeners =====
