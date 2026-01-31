@@ -6,7 +6,7 @@ nixPkgs = [
   "freetype",
   "harfbuzz",
   "fontconfig",
-  "ttf-dejavu",
+  "dejavu_fonts",
   "cacert"
 ]
 
