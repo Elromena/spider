@@ -228,6 +228,33 @@
             flex-shrink: 0;
         }
         
+        .result-meta.error-text {
+            color: var(--danger);
+        }
+        
+        .result-redirect {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+            flex-shrink: 1;
+            min-width: 0;
+            background: var(--warning-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--warning);
+        }
+        
+        .result-redirect a {
+            color: var(--warning);
+            text-decoration: none;
+        }
+        
+        .result-redirect a:hover {
+            color: var(--accent-primary);
+            text-decoration: underline;
+        }
+        
         .result-notes {
             flex-shrink: 0;
         }
@@ -364,6 +391,12 @@
                 order: 5;
                 width: 100%;
                 white-space: normal;
+            }
+            
+            .result-redirect {
+                order: 5;
+                width: 100%;
+                font-size: 0.7rem;
             }
             
             .result-notes {
@@ -681,8 +714,13 @@
                 }
                 
                 let meta = '';
-                if (r.error) meta = r.error;
-                else if (r.finalUrl && r.finalUrl !== r.url) meta = `→ ${truncate(r.finalUrl, 40)}`;
+                let metaHtml = '';
+                if (r.error) {
+                    meta = r.error;
+                    metaHtml = `<span class="result-meta error-text">${escapeHtml(meta)}</span>`;
+                } else if (r.finalUrl && r.finalUrl !== r.url) {
+                    metaHtml = `<span class="result-redirect">→ <a href="${escapeHtml(r.finalUrl)}" target="_blank" title="${escapeHtml(r.finalUrl)}">${escapeHtml(r.finalUrl)}</a></span>`;
+                }
                 
                 return `
                     <div class="result-row ${isDone ? 'done' : ''}" data-id="${r.id}" data-status="${statusClass}" data-item-status="${r.itemStatus || 'pending'}">
@@ -690,7 +728,7 @@
                         <span class="result-status ${statusClass}">${statusLabel}</span>${statusChange}
                         <button class="recheck-btn" onclick="recheckUrl('${r.id}')" title="Re-check this URL">↻</button>
                         <span class="result-url"><a href="${escapeHtml(r.url)}" target="_blank">${escapeHtml(r.url)}</a></span>
-                        ${meta ? `<span class="result-meta">${escapeHtml(meta)}</span>` : ''}
+                        ${metaHtml}
                         <span class="result-notes">
                             <input type="text" placeholder="Notes..." value="${escapeHtml(r.notes || '')}" onchange="updateNotes('${r.id}', this.value)">
                         </span>
