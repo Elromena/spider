@@ -94,6 +94,14 @@ Spider/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
+| `PUPPETEER_EXECUTABLE_PATH` | (auto) | Chromium path for deployments |
+| `PUPPETEER_SKIP_DOWNLOAD` | `false` | Skip Chromium download when using system Chromium |
+| `NODE_OPTIONS` | (empty) | Node memory flags (e.g. `--max-old-space-size=1024`) |
+
+### Railway Deploy
+
+This repo includes `nixpacks.toml` and `railway.json` for Railway builds with Chromium.
+Recommended for large crawls: set RAM 4–8 GB and 2–4 vCPU on the Hobby plan.
 
 ### Crawler Settings
 
