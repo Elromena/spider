@@ -1,0 +1,25 @@
+{
+  "name": "spider-link-auditor",
+  "version": "1.0.0",
+  "description": "A web crawler tool to find and audit links on any website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "crawler",
+    "spider",
+    "link-auditor",
+    "seo",
+    "puppeteer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^21.6.1",
+    "socket.io": "^4.6.1",
+    "uuid": "^9.0.0"
+  }
+}

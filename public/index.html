@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕷️ SPIDER - Link Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">🕷️</span>
+                <span class="logo-text">SPIDER</span>
+                <span class="logo-subtitle">Link Auditor</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="addSiteBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Index New Site
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content-full">
+            <!-- Left Panel: Indexed Sites -->
+            <section class="sites-panel">
+                <h2 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    Indexed Sites
+                </h2>
+                
+                <div class="sites-list" id="sitesList">
+                    <div class="empty-state-small" id="noSitesMessage">
+                        <p>No sites indexed yet.</p>
+                        <p class="hint">Click "Index New Site" to get started!</p>
+                    </div>
+                </div>
+                
+                <!-- Health Reports Section -->
+                <h2 class="section-title" style="margin-top: 1.5rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    Health Reports
+                </h2>
+                <div class="sites-list" id="reportsList" style="max-height: 200px;">
+                    <div class="empty-state-small" id="noReportsMessage">
+                        <p>No reports yet.</p>
+                        <p class="hint">Run a health check to generate reports.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Search -->
+            <section class="search-panel">
+                <div class="no-site-selected" id="noSiteSelected">
+                    <div class="empty-icon">🔍</div>
+                    <h3>Select a site to search</h3>
+                    <p>Choose an indexed site from the left panel, or index a new site first.</p>
+                </div>
+
+                <div class="search-container hidden" id="searchContainer">
+                <div class="selected-site-header">
+                    <h2 class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        Search: <span id="selectedSiteName">—</span>
+                    </h2>
+                    <div class="site-meta" id="selectedSiteMeta"></div>
+                    <div class="site-actions">
+                        <button class="btn btn-ghost btn-sm" id="runHealthCheckBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                            </svg>
+                            Run Health Check
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="compareSitemapBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Compare with Sitemap
+                        </button>
+                    </div>
+                </div>
+
+                    <form id="searchForm" class="search-form">
+                        <div class="form-row">
+                            <div class="form-group flex-1">
+                                <label for="searchMode">Search Mode</label>
+                                <select id="searchMode">
+                                    <option value="pattern">🔍 Find links matching pattern</option>
+                                    <option value="crosslocale">🌐 Find cross-locale links</option>
+                                    <option value="both">🔍🌐 Both</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="patternGroup">
+                            <label for="searchPattern">Search Pattern</label>
+                            <input type="text" id="searchPattern" placeholder="/bad-link, spam-domain.com, /old-page">
+                            <span class="input-hint">Find links containing this text. Separate multiple with commas.</span>
+                        </div>
+
+                        <div class="locale-options hidden" id="localeOptions">
+                            <div class="form-group">
+                                <label for="sourceLocale">Source Pages Locale</label>
+                                <select id="sourceLocale">
+                                    <option value="default">Default (no prefix - e.g., /about)</option>
+                                    <option value="">All pages</option>
+                                    <option value="en">English (/en/)</option>
+                                    <option value="de">German (/de/)</option>
+                                    <option value="fr">French (/fr/)</option>
+                                    <option value="es">Spanish (/es/)</option>
+                                </select>
+                                <span class="input-hint">Which pages to search for cross-locale issues</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="otherLocales">Other Locale Prefixes</label>
+                                <input type="text" id="otherLocales" value="de, fr, es, it, pt, ja, ko, zh">
+                                <span class="input-hint">Links to these locales will be flagged</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="excludeLocaleSwitcher" checked>
+                                <span class="checkbox-text">Exclude locale switcher links</span>
+                            </label>
+                            <span class="input-hint">Filters out links with text like "French", "Deutsch", "日本語" (language names in dropdowns)</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"/>
+                                </svg>
+                                Search Instantly
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Results -->
+                    <div class="results-section">
+                        <div class="results-header">
+                            <h3 class="results-title">
+                                <span id="resultsCount">0</span> Results
+                                <span class="results-pages-count" id="resultsPagesCount"></span>
+                                <span class="search-time" id="searchTime"></span>
+                            </h3>
+                            <div class="results-actions">
+                                <button class="btn btn-ghost btn-sm" id="exportJsonBtn" disabled>Export JSON</button>
+                                <button class="btn btn-ghost btn-sm" id="exportCsvBtn" disabled>Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="results-filter">
+                            <input type="text" id="resultsFilterInput" placeholder="🔍 Filter results by URL or text...">
+                        </div>
+                        <div class="findings-list" id="findingsList">
+                            <div class="empty-state-small">
+                                <p>Run a search to see results</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Index Progress Panel (shown when indexing) -->
+        <div class="progress-overlay hidden" id="progressOverlay">
+            <div class="progress-modal">
+                <div class="progress-header">
+                    <h2>
+                        <span class="pulse-dot"></span>
+                        Indexing Site...
+                    </h2>
+                    <button class="btn btn-danger btn-sm" id="stopIndexBtn">Stop</button>
+                </div>
+                <div class="progress-body">
+                    <div class="progress-url" id="progressUrl">Starting...</div>
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="pagesIndexed">0</span>
+                            <span class="stat-label">Pages Indexed</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="linksFound">0</span>
+                            <span class="stat-label">Links Found</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="queueRemaining">0</span>
+                            <span class="stat-label">In Queue</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="indexSpeed">-</span>
+                            <span class="stat-label">Links/sec</span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+                <div class="progress-log" id="progressLog"></div>
+            </div>
+        </div>
+
+        <!-- Add Site Modal -->
+        <div class="modal-overlay hidden" id="addSiteModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Index New Site</h2>
+                    <button class="btn btn-ghost btn-close" id="closeAddSiteBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSiteForm">
+                        <div class="form-group">
+                            <label for="newSiteUrl">Website URL</label>
+                            <input type="url" id="newSiteUrl" placeholder="https://example.com" required>
+                            <span class="input-hint">Enter the homepage URL to start indexing</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="maxPagesToIndex">Max Pages to Index</label>
+                            <select id="maxPagesToIndex">
+                                <option value="100">100 pages (Quick test ~2 min)</option>
+                                <option value="500" selected>500 pages (Small site ~5 min)</option>
+                                <option value="1000">1,000 pages (Medium ~10 min)</option>
+                                <option value="5000">5,000 pages (Large ~30 min)</option>
+                                <option value="10000">10,000 pages (Very large ~1 hr)</option>
+                                <option value="0">♾️ Unlimited (Full site)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="localeFilter">Locale Filter (Optional)</label>
+                            <select id="localeFilter">
+                                <option value="">🌐 Full Site (all locales)</option>
+                                <option value="default">Default locale (no prefix, e.g., /about)</option>
+                                <option value="en">English (/en/)</option>
+                                <option value="de">German (/de/)</option>
+                                <option value="fr">French (/fr/)</option>
+                                <option value="es">Spanish (/es/)</option>
+                                <option value="it">Italian (/it/)</option>
+                                <option value="pt">Portuguese (/pt/)</option>
+                                <option value="ja">Japanese (/ja/)</option>
+                                <option value="custom">Custom prefix...</option>
+                            </select>
+                            <span class="input-hint">Only index pages from this locale</span>
+                        </div>
+                        <div class="form-group hidden" id="customLocaleGroup">
+                            <label for="customLocale">Custom Locale Prefix</label>
+                            <input type="text" id="customLocale" placeholder="e.g., zh-cn, nl, ko">
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="excludeSwitcherOnIndex" checked>
+                                <span class="checkbox-text">Exclude locale switcher links from index</span>
+                            </label>
+                            <span class="input-hint">Don't store links with text like "French", "Deutsch" (cleaner index, faster searches)</span>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-ghost" id="cancelAddSiteBtn">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                                </svg>
+                                Start Indexing
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Report Modal -->
+        <div class="modal-overlay hidden" id="healthReportModal">
+            <div class="modal modal-large">
+                <div class="modal-header">
+                    <h2>🏥 Link Health Report</h2>
+                    <button class="btn btn-ghost btn-close" id="closeHealthReportBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Progress (shown during check) -->
+                    <div class="health-progress hidden" id="healthProgress">
+                        <div class="health-progress-text">
+                            <span class="pulse-dot"></span>
+                            Checking links... <span id="healthProgressCount">0</span> / <span id="healthProgressTotal">0</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="healthProgressBar"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Results -->
+                    <div id="healthResults">
+                        <div class="health-stats">
+                            <div class="health-stat good">
+                                <span class="health-stat-value" id="healthyCount">0</span>
+                                <span class="health-stat-label">✓ Healthy</span>
+                            </div>
+                            <div class="health-stat warning">
+                                <span class="health-stat-value" id="redirectCount">0</span>
+                                <span class="health-stat-label">↪ Redirects</span>
+                            </div>
+                            <div class="health-stat danger">
+                                <span class="health-stat-value" id="brokenCount">0</span>
+                                <span class="health-stat-label">✗ Broken</span>
+                            </div>
+                            <div class="health-stat locale">
+                                <span class="health-stat-value" id="crossLocaleCount">0</span>
+                                <span class="health-stat-label">🌐 Wrong Locale</span>
+                            </div>
+                        </div>
+                        
+                        <div class="health-section" id="brokenSection">
+                            <h3>🔴 Broken Links <span class="health-action-hint">→ Remove or fix these links</span></h3>
+                            <div class="health-list" id="brokenList"></div>
+                        </div>
+                        
+                        <div class="health-section" id="redirectSection">
+                            <h3>🟡 Redirects <span class="health-action-hint">→ Update to final destination URL</span></h3>
+                            <div class="health-list" id="redirectList"></div>
+                        </div>
+                        
+                        <div class="health-section" id="crossLocaleSection">
+                            <h3>🟠 Cross-Locale Links <span class="health-action-hint">→ Update to correct locale version</span></h3>
+                            <div class="health-list" id="crossLocaleList"></div>
+                        </div>
+                        
+                        <!-- View Full Report Button -->
+                        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button class="btn btn-secondary" id="closeHealthReportBtn2">Close</button>
+                            <a class="btn btn-primary" id="viewFullReportBtn" href="#" target="_blank">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                    <polyline points="15,3 21,3 21,9"/>
+                                    <line x1="10" y1="14" x2="21" y2="3"/>
+                                </svg>
+                                View Full Report
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sitemap Comparison Modal -->
+        <div class="modal-overlay hidden" id="sitemapModal">
+            <div class="modal modal-large">
+                <div class="modal-header">
+                    <h2>Sitemap Comparison</h2>
+                    <button class="btn btn-ghost btn-close" id="closeSitemapBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="sitemap-loading" id="sitemapLoading">
+                        <div class="pulse-dot"></div>
+                        <span>Fetching sitemap...</span>
+                    </div>
+                    <div class="sitemap-results hidden" id="sitemapResults">
+                        <div class="sitemap-stats">
+                            <div class="sitemap-stat">
+                                <span class="sitemap-stat-value" id="sitemapTotal">0</span>
+                                <span class="sitemap-stat-label">In Sitemap</span>
+                            </div>
+                            <div class="sitemap-stat good">
+                                <span class="sitemap-stat-value" id="sitemapInIndex">0</span>
+                                <span class="sitemap-stat-label">✓ In Index</span>
+                            </div>
+                            <div class="sitemap-stat warning">
+                                <span class="sitemap-stat-value" id="sitemapMissing">0</span>
+                                <span class="sitemap-stat-label">✗ Missing</span>
+                            </div>
+                            <div class="sitemap-stat info">
+                                <span class="sitemap-stat-value" id="sitemapExtra">0</span>
+                                <span class="sitemap-stat-label">+ Extra</span>
+                            </div>
+                        </div>
+                        <div class="sitemap-missing-section" id="sitemapMissingSection">
+                            <h3>Missing URLs <span class="missing-count"></span></h3>
+                            <div class="sitemap-url-list" id="sitemapMissingList"></div>
+                            <button class="btn btn-primary" id="indexMissingBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Index Missing URLs Only
+                            </button>
+                        </div>
+                        <div class="sitemap-extra-section hidden" id="sitemapExtraSection">
+                            <h3>Extra URLs (found by crawl, not in sitemap)</h3>
+                            <div class="sitemap-url-list" id="sitemapExtraList"></div>
+                        </div>
+                    </div>
+                    <div class="sitemap-error hidden" id="sitemapError">
+                        <span class="error-icon">⚠️</span>
+                        <span class="error-message" id="sitemapErrorMsg"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

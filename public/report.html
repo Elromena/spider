@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Report - Spider</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: var(--bg-primary);
+            min-height: 100vh;
+        }
+        
+        .report-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .report-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 0.5rem 0;
+        }
+        
+        .report-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .report-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            min-width: 120px;
+        }
+        
+        .stat-card-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .stat-card-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card.pending .stat-card-value { color: var(--warning); }
+        .stat-card.in-progress .stat-card-value { color: var(--accent-primary); }
+        .stat-card.fixed .stat-card-value { color: var(--success); }
+        
+        .issue-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+        }
+        
+        .issue-section-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .issue-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .issue-count {
+            background: var(--bg-tertiary);
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .issue-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .issue-group {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .issue-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+
+        .issue-group-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+
+        .issue-group-toggle svg {
+            transition: transform 0.15s ease;
+        }
+
+        .issue-group[data-collapsed="true"] .issue-group-toggle svg {
+            transform: rotate(-90deg);
+        }
+
+        .issue-group-title {
+            display: inline-flex;
+            gap: 0.5rem;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .issue-group-title a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            word-break: break-all;
+        }
+
+        .issue-group-count {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .issue-group-status {
+            padding: 0.3rem 0.6rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .issue-group-status.pending { border-color: var(--warning); }
+        .issue-group-status.inProgress { border-color: var(--accent-primary); }
+        .issue-group-status.fixed { border-color: var(--success); }
+
+        .issue-group-list .issue-item:last-child {
+            border-bottom: none;
+        }
+        
+        .issue-item {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1rem;
+            align-items: start;
+        }
+        
+        .issue-item:last-child {
+            border-bottom: none;
+        }
+        
+        .issue-status-select {
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .issue-status-select.pending { border-color: var(--warning); }
+        .issue-status-select.inProgress { border-color: var(--accent-primary); }
+        .issue-status-select.fixed { border-color: var(--success); }
+        
+        .issue-content {
+            min-width: 0;
+        }
+        
+        .issue-anchor {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+        
+        .issue-target {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--danger);
+            word-break: break-all;
+            margin-bottom: 0.25rem;
+        }
+        
+        .issue-source {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .issue-source a {
+            color: var(--accent-primary);
+        }
+        
+        .issue-badge {
+            font-size: 0.7rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+        }
+        
+        .issue-badge.broken { background: var(--danger-light); color: var(--danger); }
+        .issue-badge.redirect { background: var(--warning-light); color: var(--warning); }
+        .issue-badge.locale { background: var(--accent-light); color: var(--accent-primary); }
+        
+        .issue-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-primary);
+        }
+        
+        .filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .filter-btn.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="report-page">
+        <a href="/" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to Spider
+        </a>
+        
+        <div id="loading" class="loading">
+            <span class="spinner"></span>
+            Loading report...
+        </div>
+        
+        <div id="reportContent" style="display: none;">
+            <div class="report-header">
+                <div>
+                    <h1 class="report-title" id="reportTitle">Health Report</h1>
+                    <div class="report-meta">
+                        <span id="reportDate"></span> • <span id="reportSite"></span>
+                    </div>
+                </div>
+                <div class="report-actions">
+                    <button class="btn btn-secondary" id="exportCsvBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export CSV
+                    </button>
+                    <button class="btn btn-secondary" id="exportJsonBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export JSON
+                    </button>
+                    <button class="btn btn-primary" id="reverifyBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6"/>
+                            <path d="M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        Re-verify Fixed
+                    </button>
+                </div>
+            </div>
+            
+            <div class="stats-bar">
+                <div class="stat-card pending">
+                    <div class="stat-card-value" id="pendingCount">0</div>
+                    <div class="stat-card-label">Pending</div>
+                </div>
+                <div class="stat-card in-progress">
+                    <div class="stat-card-value" id="inProgressCount">0</div>
+                    <div class="stat-card-label">In Progress</div>
+                </div>
+                <div class="stat-card fixed">
+                    <div class="stat-card-value" id="fixedCount">0</div>
+                    <div class="stat-card-label">Fixed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-value" id="healthyCount">0</div>
+                    <div class="stat-card-label">Healthy Links</div>
+                </div>
+            </div>
+            
+            <div class="filter-bar">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="inProgress">In Progress</button>
+                <button class="filter-btn" data-filter="fixed">Fixed</button>
+            </div>
+            
+            <div id="brokenSection" class="issue-section">
+                <div class="issue-section-header">
+                    <div class="issue-section-title">
+                        🔴 Broken Links
+                        <span class="issue-count" id="brokenCount">0</span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Remove or update these links</span>
+                </div>
+                <div class="issue-list" id="brokenList"></div>
+            </div>
+            
+            <div id="redirectSection" class="issue-section">
+                <div class="issue-section-header">
+                    <div class="issue-section-title">
+                        🟡 Redirects
+                        <span class="issue-count" id="redirectCount">0</span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Update to final destination URL</span>
+                </div>
+                <div class="issue-list" id="redirectList"></div>
+            </div>
+            
+            <div id="crossLocaleSection" class="issue-section">
+                <div class="issue-section-header">
+                    <div class="issue-section-title">
+                        🟠 Cross-Locale Links
+                        <span class="issue-count" id="crossLocaleCount">0</span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Update to correct locale version</span>
+                </div>
+                <div class="issue-list" id="crossLocaleList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let reportData = null;
+        let reportId = null;
+        let currentFilter = 'all';
+        let groupIndex = {};
+        
+        // Get report ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        reportId = urlParams.get('id');
+        
+        if (!reportId) {
+            document.getElementById('loading').innerHTML = 'No report ID provided. <a href="/">Go back</a>';
+        } else {
+            loadReport();
+        }
+        
+        async function loadReport() {
+            try {
+                const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load report');
+                }
+                
+                reportData = data.report;
+                renderReport();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `Error: ${error.message}. <a href="/">Go back</a>`;
+            }
+        }
+        
+        function renderReport() {
+            // Header info
+            document.getElementById('reportTitle').textContent = `Health Report: ${reportData.site}`;
+            document.getElementById('reportSite').textContent = reportData.site + (reportData.locale !== 'full' ? ` (${reportData.locale})` : '');
+            document.getElementById('reportDate').textContent = new Date(reportData.createdAt).toLocaleString();
+            
+            // Stats
+            document.getElementById('pendingCount').textContent = reportData.issueStats?.pending || 0;
+            document.getElementById('inProgressCount').textContent = reportData.issueStats?.inProgress || 0;
+            document.getElementById('fixedCount').textContent = reportData.issueStats?.fixed || 0;
+            document.getElementById('healthyCount').textContent = reportData.report?.healthy || 0;
+            
+            // Render issues
+            renderIssues();
+        }
+        
+        function renderIssues() {
+            const broken = filterIssues(reportData.report?.broken || []);
+            const redirects = filterIssues(reportData.report?.redirects || []);
+            const crossLocale = filterIssues(reportData.report?.crossLocale || []);
+            groupIndex = {};
+            
+            document.getElementById('brokenCount').textContent = broken.length;
+            document.getElementById('redirectCount').textContent = redirects.length;
+            document.getElementById('crossLocaleCount').textContent = crossLocale.length;
+            
+            const brokenGroups = groupIssuesBySource(broken, 'broken');
+            const redirectGroups = groupIssuesBySource(redirects, 'redirect');
+            const crossLocaleGroups = groupIssuesBySource(crossLocale, 'locale');
+
+
+            document.getElementById('brokenList').innerHTML = brokenGroups.length ? 
+                brokenGroups.map(g => renderIssueGroup(g, 'broken')).join('') :
+                '<div class="empty-state">No broken links</div>';
+            
+            document.getElementById('redirectList').innerHTML = redirectGroups.length ? 
+                redirectGroups.map(g => renderIssueGroup(g, 'redirect')).join('') :
+                '<div class="empty-state">No redirects</div>';
+            
+            document.getElementById('crossLocaleList').innerHTML = crossLocaleGroups.length ? 
+                crossLocaleGroups.map(g => renderIssueGroup(g, 'locale')).join('') :
+                '<div class="empty-state">No cross-locale issues</div>';
+            
+            // Show/hide sections
+            document.getElementById('brokenSection').style.display = broken.length || currentFilter === 'all' ? 'block' : 'none';
+            document.getElementById('redirectSection').style.display = redirects.length || currentFilter === 'all' ? 'block' : 'none';
+            document.getElementById('crossLocaleSection').style.display = crossLocale.length || currentFilter === 'all' ? 'block' : 'none';
+        }
+        
+        function filterIssues(issues) {
+            if (currentFilter === 'all') return issues;
+            return issues.filter(i => i.status === currentFilter);
+        }
+
+        function groupIssuesBySource(issues, type) {
+            const groups = new Map();
+            for (const issue of issues) {
+                const sourceUrl = issue.sourceUrl || '(unknown)';
+                if (!groups.has(sourceUrl)) {
+                    groups.set(sourceUrl, { sourceUrl, issues: [] });
+                }
+                groups.get(sourceUrl).issues.push(issue);
+            }
+            return Array.from(groups.values()).sort((a, b) => a.sourceUrl.localeCompare(b.sourceUrl)).map(group => {
+                const groupId = makeGroupId(group.sourceUrl, type);
+                groupIndex[groupId] = { ...group, type };
+                return { ...group, id: groupId, type };
+            });
+        }
+
+        function makeGroupId(sourceUrl, type) {
+            const safeSource = String(sourceUrl || 'unknown')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)/g, '');
+            return `group-${type}-${safeSource}`;
+        }
+
+        function renderIssueGroup(group, type) {
+            const issuesMarkup = group.issues.map(i => renderIssueItem(i, type)).join('');
+            const groupStatus = getGroupStatus(group.issues);
+            const statusSelect = renderGroupStatusSelect(group.id, groupStatus);
+            return `
+                <div class="issue-group" data-group-id="${group.id}" data-collapsed="true">
+                    <div class="issue-group-header">
+                        <button class="issue-group-toggle" onclick="toggleGroup('${group.id}')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                            Group
+                        </button>
+                        <div class="issue-group-title">
+                            Page:
+                            <a href="${group.sourceUrl}" target="_blank">${escapeHtml(group.sourceUrl)}</a>
+                        </div>
+                        <div class="issue-group-count">${group.issues.length} link${group.issues.length === 1 ? '' : 's'}</div>
+                        ${statusSelect}
+                    </div>
+                    <div class="issue-group-list" id="${group.id}" style="display: none;">
+                        ${issuesMarkup}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderIssueItem(issue, type) {
+            const badge = type === 'broken' ? `<span class="issue-badge broken">Broken</span>` :
+                          type === 'redirect' ? `<span class="issue-badge redirect">Redirect</span>` :
+                          `<span class="issue-badge locale">${issue.sourceLocale || 'default'} → ${issue.targetLocale}</span>`;
+            
+            return `
+                <div class="issue-item" data-issue-id="${issue.id}">
+                    <div class="issue-content">
+                        <div class="issue-anchor">${badge} "${escapeHtml(issue.anchorText || issue.linkText || issue.text || '(no text)')}"</div>
+                        <div class="issue-target">→ ${escapeHtml(issue.targetUrl)}</div>
+                        <div class="issue-source">Found on: <a href="${issue.sourceUrl}" target="_blank">${escapeHtml(issue.sourceUrl)}</a></div>
+                    </div>
+                    <div class="issue-actions">
+                        ${issue.occurrences > 1 ? `<span style="font-size: 0.7rem; color: var(--text-muted);">×${issue.occurrences} pages</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function getGroupStatus(issues) {
+            if (!issues.length) return 'pending';
+            const unique = new Set(issues.map(i => i.status || 'pending'));
+            return unique.size === 1 ? Array.from(unique)[0] : 'mixed';
+        }
+
+        function renderGroupStatusSelect(groupId, status) {
+            const options = [
+                { value: 'pending', label: '⏳ Pending' },
+                { value: 'inProgress', label: '🔧 In Progress' },
+                { value: 'fixed', label: '✅ Fixed' }
+            ];
+            const mixedOption = status === 'mixed'
+                ? `<option value="mixed" selected disabled>⚠ Mixed</option>`
+                : '';
+            const renderedOptions = options.map(option => 
+                `<option value="${option.value}" ${status === option.value ? 'selected' : ''}>${option.label}</option>`
+            ).join('');
+            return `
+                <select class="issue-group-status ${status !== 'mixed' ? status : ''}" onchange="updateGroupStatus('${groupId}', this.value)">
+                    ${mixedOption}
+                    ${renderedOptions}
+                </select>
+            `;
+        }
+
+        function toggleGroup(groupId) {
+            const container = document.querySelector(`[data-group-id="${groupId}"]`);
+            const list = document.getElementById(groupId);
+            if (!container || !list) return;
+            const isCollapsed = container.getAttribute('data-collapsed') === 'true';
+            container.setAttribute('data-collapsed', isCollapsed ? 'false' : 'true');
+            list.style.display = isCollapsed ? 'block' : 'none';
+        }
+
+        async function updateGroupStatus(groupId, status) {
+            const group = groupIndex[groupId];
+            if (!group) return;
+            await Promise.all(group.issues.map(issue => updateIssueStatus(issue.id, status, false)));
+            renderIssues();
+        }
+        
+        async function updateIssueStatus(issueId, status, updateUI = true) {
+            try {
+                const response = await fetch(`/api/reports/${encodeURIComponent(reportId)}/issues/${issueId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Update local data
+                    for (const category of ['broken', 'redirects', 'crossLocale']) {
+                        const issue = reportData.report[category]?.find(i => i.id === issueId);
+                        if (issue) {
+                            issue.status = status;
+                            break;
+                        }
+                    }
+                    reportData.issueStats = data.issueStats;
+                    
+                    if (updateUI) {
+                        // Update UI
+                        document.getElementById('pendingCount').textContent = data.issueStats.pending;
+                        document.getElementById('inProgressCount').textContent = data.issueStats.inProgress;
+                        document.getElementById('fixedCount').textContent = data.issueStats.fixed;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update status:', error);
+                alert('Failed to update status');
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderIssues();
+            });
+        });
+        
+        // Export buttons
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            window.location.href = `/api/reports/${encodeURIComponent(reportId)}/export?format=csv`;
+        });
+        
+        document.getElementById('exportJsonBtn').addEventListener('click', () => {
+            window.location.href = `/api/reports/${encodeURIComponent(reportId)}/export?format=json`;
+        });
+        
+        // Re-verify button
+        document.getElementById('reverifyBtn').addEventListener('click', async () => {
+            if (!confirm('This will re-check all links marked as "Fixed" to verify they are actually working. Continue?')) {
+                return;
+            }
+            
+            const btn = document.getElementById('reverifyBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Verifying...';
+            
+            // Get fixed issues
+            const fixedIssues = [];
+            for (const category of ['broken', 'redirects', 'crossLocale']) {
+                for (const issue of (reportData.report[category] || [])) {
+                    if (issue.status === 'fixed') {
+                        fixedIssues.push({ ...issue, category });
+                    }
+                }
+            }
+            
+            if (fixedIssues.length === 0) {
+                alert('No issues marked as fixed to verify');
+                btn.disabled = false;
+                btn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Re-verify Fixed
+                `;
+                return;
+            }
+            
+            // Re-check each fixed issue
+            let stillBroken = 0;
+            let verified = 0;
+            
+            for (const issue of fixedIssues) {
+                try {
+                    const response = await fetch(issue.targetUrl, { method: 'HEAD', redirect: 'manual' });
+                    if (response.status >= 400 || response.status === 0) {
+                        stillBroken++;
+                        // Mark as pending again
+                        await updateIssueStatus(issue.id, 'pending');
+                    } else {
+                        verified++;
+                    }
+                } catch {
+                    stillBroken++;
+                    await updateIssueStatus(issue.id, 'pending');
+                }
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                Re-verify Fixed
+            `;
+            
+            if (stillBroken > 0) {
+                alert(`Verification complete!\n✅ ${verified} issues confirmed fixed\n⚠️ ${stillBroken} issues still broken (marked as pending)`);
+                renderIssues();
+            } else {
+                alert(`✅ All ${verified} fixed issues verified!`);
+            }
+        });
+    </script>
+</body>
+</html>
