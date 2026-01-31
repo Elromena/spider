@@ -308,6 +308,119 @@
             padding: 2rem;
             color: var(--text-muted);
         }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .report-page {
+                padding: 1rem;
+            }
+            
+            .report-header {
+                flex-direction: column;
+            }
+            
+            .report-title {
+                font-size: 1.2rem;
+            }
+            
+            .report-actions {
+                width: 100%;
+            }
+            
+            .report-actions .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .stats-bar {
+                gap: 0.5rem;
+            }
+            
+            .stat-card {
+                flex: 1 1 calc(50% - 0.5rem);
+                min-width: calc(50% - 0.5rem);
+                padding: 0.75rem;
+            }
+            
+            .stat-card-value {
+                font-size: 1.25rem;
+            }
+            
+            .issue-section-header {
+                padding: 0.75rem 1rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .issue-group-header {
+                padding: 0.75rem 1rem;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            
+            .issue-group-title {
+                flex-wrap: wrap;
+            }
+            
+            .issue-group-title a {
+                font-size: 0.7rem;
+            }
+            
+            .issue-item {
+                padding: 0.75rem 1rem;
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .issue-badge {
+                justify-self: start;
+            }
+            
+            .issue-target {
+                font-size: 0.75rem;
+            }
+            
+            .issue-list {
+                max-height: none;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .filter-bar select,
+            .filter-bar input {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stat-card {
+                flex: 1 1 100%;
+                min-width: 100%;
+            }
+        }
+        
+        /* Touch-friendly */
+        @media (hover: none) and (pointer: coarse) {
+            .issue-status-select,
+            .issue-group-status {
+                min-height: 40px;
+                font-size: 16px;
+            }
+            
+            .issue-group-toggle {
+                min-height: 44px;
+                padding: 0.5rem;
+            }
+            
+            .btn {
+                min-height: 44px;
+            }
+        }
     </style>
 </head>
 <body>

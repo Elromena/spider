@@ -271,12 +271,152 @@
             color: var(--accent-primary);
         }
         
+        /* Responsive */
         @media (max-width: 768px) {
-            .result-row {
+            .header {
+                padding: 0.5rem 1rem;
+            }
+            
+            .logo-subtitle {
+                display: none;
+            }
+            
+            .report-container {
+                padding: 1rem;
+            }
+            
+            .report-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .report-title {
+                font-size: 1.2rem;
+            }
+            
+            .report-actions {
                 flex-wrap: wrap;
             }
+            
+            .report-actions .btn {
+                flex: 1;
+                min-width: calc(50% - 0.25rem);
+                justify-content: center;
+            }
+            
+            .report-summary {
+                flex-wrap: wrap;
+            }
+            
+            .summary-card {
+                flex: 1 1 calc(33.333% - 0.5rem);
+                min-width: calc(33.333% - 0.5rem);
+                padding: 0.5rem;
+            }
+            
+            .summary-value {
+                font-size: 1.25rem;
+            }
+            
+            .summary-label {
+                font-size: 0.6rem;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+            }
+            
+            .filter-bar input,
+            .filter-bar select {
+                width: 100%;
+                min-width: unset;
+            }
+            
+            .results-list {
+                max-height: none;
+            }
+            
+            .result-row {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 0.75rem;
+            }
+            
+            .result-checkbox {
+                order: 0;
+            }
+            
+            .result-status {
+                order: 1;
+            }
+            
+            .recheck-btn {
+                order: 2;
+            }
+            
+            .result-url {
+                order: 4;
+                width: 100%;
+                font-size: 0.75rem;
+            }
+            
+            .result-meta {
+                order: 5;
+                width: 100%;
+                white-space: normal;
+            }
+            
+            .result-notes {
+                order: 6;
+                width: 100%;
+            }
+            
             .result-notes input {
                 width: 100%;
+            }
+            
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .summary-card {
+                flex: 1 1 calc(50% - 0.25rem);
+                min-width: calc(50% - 0.25rem);
+            }
+            
+            .report-actions .btn {
+                min-width: 100%;
+            }
+        }
+        
+        /* Touch-friendly */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px;
+            }
+            
+            .result-checkbox {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .recheck-btn {
+                min-width: 36px;
+                min-height: 36px;
+                font-size: 1rem;
+            }
+            
+            .result-notes input {
+                min-height: 40px;
+                font-size: 16px;
+            }
+            
+            .filter-bar input,
+            .filter-bar select {
+                min-height: 44px;
+                font-size: 16px;
             }
         }
     </style>

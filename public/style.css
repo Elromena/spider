@@ -1477,27 +1477,474 @@ body {
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 900px) {
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
     .main-content-full {
-        grid-template-columns: 1fr;
-    }
-    
-    .sites-panel {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        max-height: 200px;
-    }
-    
-    .tool-nav {
-        display: none;
+        grid-template-columns: 280px 1fr;
     }
     
     .status-validator-container {
+        grid-template-columns: 320px 1fr;
+    }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 768px) {
+    /* Header */
+    .header {
+        padding: 0.5rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .logo {
+        flex: 1;
+    }
+    
+    .logo-subtitle {
+        display: none;
+    }
+    
+    .header-actions {
+        order: 3;
+        width: 100%;
+    }
+    
+    .header-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Tool Navigation - Bottom bar on mobile */
+    .tool-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        border-radius: 0;
+        padding: 0.5rem;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        justify-content: center;
+    }
+    
+    .tool-nav-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 0.75rem 0.5rem;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .tool-nav-btn svg {
+        width: 22px;
+        height: 22px;
+    }
+    
+    /* Add bottom padding to account for fixed nav */
+    .app-container {
+        padding-bottom: 70px;
+    }
+    
+    /* Main content - single column */
+    .main-content-full {
         grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+    
+    .tool-view.active {
+        overflow: auto;
+    }
+    
+    /* Sites panel becomes horizontal scroll on mobile */
+    .sites-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem;
+        max-height: none;
+    }
+    
+    .sites-list {
+        display: flex;
+        flex-direction: row;
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        flex-wrap: nowrap;
+    }
+    
+    .site-card {
+        min-width: 200px;
+        flex-shrink: 0;
+    }
+    
+    /* Search panel */
+    .search-panel {
+        padding: 1rem;
+    }
+    
+    .no-site-selected {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+    }
+    
+    /* Forms */
+    .search-form {
+        padding: 1rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-large {
+        padding: 1rem 1.5rem;
+    }
+    
+    /* Results */
+    .results-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .results-actions {
+        justify-content: stretch;
+    }
+    
+    .results-actions .btn {
+        flex: 1;
+    }
+    
+    .findings-list {
+        max-height: none;
+    }
+    
+    /* Page groups */
+    .page-group-header {
+        padding: 0.75rem;
+    }
+    
+    .page-group-url {
+        font-size: 0.7rem;
+    }
+    
+    .finding-item {
+        padding: 0.75rem;
+        padding-left: 1rem;
+    }
+    
+    .finding-target-url {
+        font-size: 0.7rem;
+    }
+    
+    /* Status Validator */
+    .status-validator-container {
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
     }
     
     .status-input-panel {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
+        padding: 1rem;
+        max-height: none;
+    }
+    
+    .status-input-panel textarea {
+        min-height: 120px;
+    }
+    
+    .status-results-panel {
+        padding: 1rem;
+        flex: 1;
+        overflow: visible;
+    }
+    
+    .status-summary {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .status-stat {
+        min-width: calc(33.333% - 0.5rem);
+        flex: 1 1 calc(33.333% - 0.5rem);
+        padding: 0.5rem;
+    }
+    
+    .status-stat-value {
+        font-size: 1.25rem;
+    }
+    
+    .status-stat-label {
+        font-size: 0.6rem;
+    }
+    
+    .status-filter-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .status-filter-row input,
+    .status-filter-row select {
+        width: 100%;
+    }
+    
+    .status-filter-row .btn {
+        width: 100%;
+    }
+    
+    .status-results-list {
+        max-height: none;
+    }
+    
+    .status-result-item {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .status-result-url {
+        width: 100%;
+        order: 2;
+        font-size: 0.75rem;
+    }
+    
+    .status-result-meta {
+        order: 3;
+        width: 100%;
+        white-space: normal;
+        font-size: 0.7rem;
+    }
+    
+    /* Modals */
+    .modal {
+        width: 95%;
+        max-width: none;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    .modal-large {
+        max-width: none;
+    }
+    
+    .modal-header {
+        padding: 1rem;
+    }
+    
+    .modal-body {
+        padding: 1rem;
+    }
+    
+    /* Health stats */
+    .health-stats {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .health-stat {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: calc(50% - 0.5rem);
+        padding: 0.75rem;
+    }
+    
+    .health-stat-value {
+        font-size: 1.5rem;
+    }
+    
+    /* Progress modal */
+    .progress-modal {
+        width: 95%;
+        max-width: none;
+    }
+    
+    .progress-stats {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .stat {
+        flex: 1 1 calc(50% - 1rem);
+    }
+    
+    .stat-value {
+        font-size: 1.25rem;
+    }
+    
+    /* Site actions */
+    .site-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .site-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Sitemap stats */
+    .sitemap-stats {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .sitemap-stat {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: calc(50% - 0.5rem);
+        padding: 0.75rem;
+    }
+    
+    /* Toast */
+    .toast-container {
+        left: 1rem;
+        right: 1rem;
+        bottom: 80px; /* Above the nav bar */
+    }
+    
+    .toast {
+        width: 100%;
+    }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+    .logo-text {
+        font-size: 1rem;
+    }
+    
+    .tool-nav-btn {
+        font-size: 0.65rem;
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .tool-nav-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .section-title {
+        font-size: 0.85rem;
+    }
+    
+    .site-card {
+        min-width: 160px;
+        padding: 0.75rem;
+    }
+    
+    .site-card-name {
+        font-size: 0.75rem;
+    }
+    
+    .status-stat {
+        min-width: calc(50% - 0.25rem);
+        padding: 0.375rem;
+    }
+    
+    .status-stat-value {
+        font-size: 1rem;
+    }
+    
+    .btn {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.8rem;
+    }
+    
+    .btn-sm {
+        padding: 0.5rem 0.625rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn {
+        min-height: 44px;
+    }
+    
+    .btn-sm {
+        min-height: 36px;
+    }
+    
+    .site-card {
+        min-height: 60px;
+    }
+    
+    .checkbox-label input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+    
+    /* Remove hover effects for touch */
+    .btn-primary:hover {
+        transform: none;
+    }
+    
+    .site-card:hover {
+        box-shadow: none;
+    }
+    
+    /* Show delete button always on touch */
+    .site-card-delete {
+        opacity: 1;
+    }
+}
+
+/* Landscape mobile */
+@media (max-width: 900px) and (orientation: landscape) {
+    .tool-nav {
+        flex-direction: row;
+        padding: 0.25rem 1rem;
+    }
+    
+    .tool-nav-btn {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    
+    .app-container {
+        padding-bottom: 50px;
+    }
+    
+    .status-validator-container {
+        flex-direction: row;
+    }
+    
+    .status-input-panel {
+        width: 40%;
+        border-right: 1px solid var(--border-color);
+        border-bottom: none;
+        max-height: none;
+        overflow-y: auto;
+    }
+    
+    .status-results-panel {
+        width: 60%;
     }
 }
