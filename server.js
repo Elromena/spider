@@ -43,6 +43,12 @@ if (!fs.existsSync(reportsDir)) {
     fs.mkdirSync(reportsDir, { recursive: true });
 }
 
+// Status reports directory
+const statusReportsDir = path.join(__dirname, 'status-reports');
+if (!fs.existsSync(statusReportsDir)) {
+    fs.mkdirSync(statusReportsDir, { recursive: true });
+}
+
 function normalizeSiteName(urlOrHost) {
     try {
         const u = new URL(urlOrHost);
@@ -362,6 +368,149 @@ app.post('/api/status-check', async (req, res) => {
         res.json({ success: true, results });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message || 'Status check failed.' });
+    }
+});
+
+// Save status check report
+app.post('/api/status-reports', (req, res) => {
+    try {
+        const { name, results } = req.body;
+        if (!results || !Array.isArray(results) || results.length === 0) {
+            return res.status(400).json({ success: false, error: 'No results to save.' });
+        }
+        
+        const timestamp = Date.now();
+        const reportId = `status_${timestamp}`;
+        const reportName = name || `Status Check ${new Date().toLocaleString()}`;
+        
+        // Add status tracking to each result
+        const resultsWithStatus = results.map((r, idx) => ({
+            ...r,
+            id: `${timestamp}_${idx}`,
+            itemStatus: 'pending',
+            notes: ''
+        }));
+        
+        // Calculate summary
+        const summary = resultsWithStatus.reduce((acc, r) => {
+            if (r.error || r.status == null) acc.error++;
+            else if (r.status >= 200 && r.status < 300) acc.s2xx++;
+            else if (r.status >= 300 && r.status < 400) acc.s3xx++;
+            else if (r.status >= 400 && r.status < 500) acc.s4xx++;
+            else if (r.status >= 500) acc.s5xx++;
+            return acc;
+        }, { s2xx: 0, s3xx: 0, s4xx: 0, s5xx: 0, error: 0 });
+        
+        const reportData = {
+            id: reportId,
+            name: reportName,
+            createdAt: new Date().toISOString(),
+            results: resultsWithStatus,
+            summary,
+            itemStats: {
+                total: resultsWithStatus.length,
+                pending: resultsWithStatus.length,
+                done: 0
+            }
+        };
+        
+        const reportPath = path.join(statusReportsDir, `${reportId}.json`);
+        fs.writeFileSync(reportPath, JSON.stringify(reportData, null, 2));
+        
+        res.json({ success: true, reportId, report: reportData });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// List status reports
+app.get('/api/status-reports', (req, res) => {
+    try {
+        const files = fs.readdirSync(statusReportsDir)
+            .filter(f => f.endsWith('.json'))
+            .map(f => {
+                try {
+                    const data = JSON.parse(fs.readFileSync(path.join(statusReportsDir, f), 'utf8'));
+                    return {
+                        id: data.id,
+                        name: data.name,
+                        createdAt: data.createdAt,
+                        summary: data.summary,
+                        itemStats: data.itemStats
+                    };
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean)
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        res.json({ success: true, reports: files });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get single status report
+app.get('/api/status-reports/:id', (req, res) => {
+    try {
+        const reportPath = path.join(statusReportsDir, `${req.params.id}.json`);
+        if (!fs.existsSync(reportPath)) {
+            return res.status(404).json({ success: false, error: 'Report not found.' });
+        }
+        const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+        res.json({ success: true, report: data });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Update item status in status report
+app.patch('/api/status-reports/:id/items/:itemId', (req, res) => {
+    try {
+        const { itemStatus, notes } = req.body;
+        const reportPath = path.join(statusReportsDir, `${req.params.id}.json`);
+        
+        if (!fs.existsSync(reportPath)) {
+            return res.status(404).json({ success: false, error: 'Report not found.' });
+        }
+        
+        const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+        const itemIndex = data.results.findIndex(r => r.id === req.params.itemId);
+        
+        if (itemIndex === -1) {
+            return res.status(404).json({ success: false, error: 'Item not found.' });
+        }
+        
+        const oldStatus = data.results[itemIndex].itemStatus;
+        if (itemStatus) data.results[itemIndex].itemStatus = itemStatus;
+        if (notes !== undefined) data.results[itemIndex].notes = notes;
+        
+        // Recalculate item stats
+        data.itemStats = {
+            total: data.results.length,
+            pending: data.results.filter(r => r.itemStatus === 'pending').length,
+            done: data.results.filter(r => r.itemStatus === 'done').length
+        };
+        
+        fs.writeFileSync(reportPath, JSON.stringify(data, null, 2));
+        res.json({ success: true, item: data.results[itemIndex], itemStats: data.itemStats });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Delete status report
+app.delete('/api/status-reports/:id', (req, res) => {
+    try {
+        const reportPath = path.join(statusReportsDir, `${req.params.id}.json`);
+        if (!fs.existsSync(reportPath)) {
+            return res.status(404).json({ success: false, error: 'Report not found.' });
+        }
+        fs.unlinkSync(reportPath);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

@@ -2,5 +2,6 @@ node_modules/
 .cursor/
 indexes/
 reports/
+status-reports/
 *.log
 .DS_Store

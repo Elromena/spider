@@ -138,14 +138,20 @@ const elements = {
     statusProgressBar: document.getElementById('statusProgressBar'),
     statusFilterInput: document.getElementById('statusFilterInput'),
     statusFilterSelect: document.getElementById('statusFilterSelect'),
+    saveStatusReportBtn: document.getElementById('saveStatusReportBtn'),
     exportStatusCsvBtn: document.getElementById('exportStatusCsvBtn'),
-    statusResultsList: document.getElementById('statusResultsList')
+    statusResultsList: document.getElementById('statusResultsList'),
+    statusReportsList: document.getElementById('statusReportsList'),
+    noStatusReportsMessage: document.getElementById('noStatusReportsMessage')
 };
+
+let statusReports = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadIndexedSites();
     loadReports();
+    loadStatusReports();
     setupEventListeners();
     setupSocketListeners();
 });
@@ -274,6 +280,9 @@ function setupEventListeners() {
     elements.statusFilterInput?.addEventListener('input', () => filterStatusResults());
     elements.statusFilterSelect?.addEventListener('change', () => filterStatusResults());
     
+    // Save status report
+    elements.saveStatusReportBtn?.addEventListener('click', saveStatusReport);
+    
     // Export status CSV
     elements.exportStatusCsvBtn?.addEventListener('click', exportStatusCsv);
 }
@@ -322,6 +331,7 @@ async function handleStatusCheck() {
         renderStatusResults(statusResults);
         updateStatusSummary(statusResults);
         elements.exportStatusCsvBtn.disabled = statusResults.length === 0;
+        elements.saveStatusReportBtn.disabled = statusResults.length === 0;
         showToast(`Checked ${statusResults.length} URLs`, 'success');
     } catch (error) {
         statusResults = [];
@@ -348,6 +358,7 @@ function clearStatusCheck() {
     statusResults = [];
     updateStatusSummary([]);
     elements.exportStatusCsvBtn.disabled = true;
+    elements.saveStatusReportBtn.disabled = true;
     elements.statusResultsList.innerHTML = `
         <div class="empty-state">
             <div class="empty-icon">📋</div>
@@ -485,6 +496,123 @@ function exportStatusCsv() {
     URL.revokeObjectURL(url);
     
     showToast(`Exported ${statusResults.length} results to CSV`, 'success');
+}
+
+// ===== Status Reports =====
+async function saveStatusReport() {
+    if (statusResults.length === 0) {
+        showToast('No results to save', 'warning');
+        return;
+    }
+    
+    const name = prompt('Enter a name for this report:', `Status Check ${new Date().toLocaleString()}`);
+    if (name === null) return; // Cancelled
+    
+    elements.saveStatusReportBtn.disabled = true;
+    elements.saveStatusReportBtn.innerHTML = '<span class="pulse-dot"></span> Saving...';
+    
+    try {
+        const response = await fetch('/api/status-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name || undefined, results: statusResults })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Report saved! You can share the link.', 'success');
+            loadStatusReports();
+            
+            // Open the report in a new tab
+            window.open(`/status-report.html?id=${data.reportId}`, '_blank');
+        } else {
+            showToast(data.error || 'Failed to save report', 'error');
+        }
+    } catch (error) {
+        showToast('Failed to save report', 'error');
+    } finally {
+        elements.saveStatusReportBtn.disabled = false;
+        elements.saveStatusReportBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17,21 17,13 7,13 7,21"/>
+                <polyline points="7,3 7,8 15,8"/>
+            </svg>
+            Save Report
+        `;
+    }
+}
+
+async function loadStatusReports() {
+    try {
+        const response = await fetch('/api/status-reports');
+        const data = await response.json();
+        statusReports = data.reports || [];
+        renderStatusReportsList();
+    } catch (error) {
+        console.error('Failed to load status reports:', error);
+    }
+}
+
+function renderStatusReportsList() {
+    if (!elements.statusReportsList) return;
+    
+    if (statusReports.length === 0) {
+        elements.noStatusReportsMessage?.classList.remove('hidden');
+        elements.statusReportsList.innerHTML = '';
+        if (elements.noStatusReportsMessage) {
+            elements.statusReportsList.appendChild(elements.noStatusReportsMessage);
+        }
+        return;
+    }
+    
+    elements.noStatusReportsMessage?.classList.add('hidden');
+    elements.statusReportsList.innerHTML = '';
+    
+    // Show recent 5 reports
+    statusReports.slice(0, 5).forEach(report => {
+        const card = document.createElement('a');
+        card.href = `/status-report.html?id=${encodeURIComponent(report.id)}`;
+        card.className = 'site-card';
+        card.style.textDecoration = 'none';
+        
+        const date = new Date(report.createdAt);
+        const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        
+        const stats = report.itemStats || { done: 0, total: 0 };
+        const sum = report.summary || {};
+        const totalUrls = stats.total || 0;
+        const doneCount = stats.done || 0;
+        
+        let statusBadge = '';
+        if (doneCount === totalUrls && totalUrls > 0) {
+            statusBadge = '<span style="color: var(--success);">✓ All Done</span>';
+        } else if (doneCount > 0) {
+            statusBadge = `<span style="color: var(--warning);">${doneCount}/${totalUrls} done</span>`;
+        } else {
+            statusBadge = `<span style="color: var(--text-muted);">${totalUrls} URLs</span>`;
+        }
+        
+        card.innerHTML = `
+            <div class="site-card-name">${escapeHtml(report.name || 'Untitled Report')}</div>
+            <div class="site-card-meta">
+                <span>${dateStr}</span>
+                ${statusBadge}
+            </div>
+        `;
+        
+        elements.statusReportsList.appendChild(card);
+    });
+    
+    // Add "View All" link if more than 5
+    if (statusReports.length > 5) {
+        const viewAll = document.createElement('div');
+        viewAll.className = 'site-card';
+        viewAll.style.textAlign = 'center';
+        viewAll.style.cursor = 'pointer';
+        viewAll.innerHTML = `<span style="color: var(--accent-primary);">View all ${statusReports.length} reports →</span>`;
+        elements.statusReportsList.appendChild(viewAll);
+    }
 }
 
 // ===== Socket Listeners =====
