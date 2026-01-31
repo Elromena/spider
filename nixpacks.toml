@@ -1,0 +1,22 @@
+[phases.setup]
+nixPkgs = [
+  "nodejs_20",
+  "chromium",
+  "nss",
+  "freetype",
+  "harfbuzz",
+  "fontconfig",
+  "ttf-dejavu",
+  "ca-certificates"
+]
+
+[variables]
+PUPPETEER_SKIP_DOWNLOAD = "true"
+PUPPETEER_EXECUTABLE_PATH = "chromium"
+NODE_OPTIONS = "--max-old-space-size=1024"
+
+[phases.build]
+cmds = ["npm install"]
+
+[start]
+cmd = "npm start"
