@@ -7,7 +7,6 @@ nixPkgs = [
   "harfbuzz",
   "fontconfig",
   "dejavu_fonts",
-  "cacert"
 ]
 
 [variables]
