@@ -466,9 +466,9 @@ app.get('/api/status-reports/:id', (req, res) => {
 });
 
 // Update item status in status report
-app.patch('/api/status-reports/:id/items/:itemId', (req, res) => {
+app.patch('/api/status-reports/:id/items/:itemId', async (req, res) => {
     try {
-        const { itemStatus, notes } = req.body;
+        const { itemStatus, notes, recheck } = req.body;
         const reportPath = path.join(statusReportsDir, `${req.params.id}.json`);
         
         if (!fs.existsSync(reportPath)) {
@@ -482,9 +482,21 @@ app.patch('/api/status-reports/:id/items/:itemId', (req, res) => {
             return res.status(404).json({ success: false, error: 'Item not found.' });
         }
         
-        const oldStatus = data.results[itemIndex].itemStatus;
-        if (itemStatus) data.results[itemIndex].itemStatus = itemStatus;
-        if (notes !== undefined) data.results[itemIndex].notes = notes;
+        const item = data.results[itemIndex];
+        
+        // Re-check URL status if marking as done or recheck requested
+        if (recheck || (itemStatus === 'done' && item.itemStatus !== 'done')) {
+            const recheckResult = await fetchUrlStatus(item.url);
+            item.previousStatus = item.status; // Store old status for reference
+            item.status = recheckResult.status;
+            item.error = recheckResult.error || null;
+            item.finalUrl = recheckResult.finalUrl;
+            item.redirected = recheckResult.redirected;
+            item.lastChecked = new Date().toISOString();
+        }
+        
+        if (itemStatus) item.itemStatus = itemStatus;
+        if (notes !== undefined) item.notes = notes;
         
         // Recalculate item stats
         data.itemStats = {
@@ -493,8 +505,18 @@ app.patch('/api/status-reports/:id/items/:itemId', (req, res) => {
             done: data.results.filter(r => r.itemStatus === 'done').length
         };
         
+        // Recalculate summary based on current statuses
+        data.summary = data.results.reduce((acc, r) => {
+            if (r.error || r.status == null) acc.error++;
+            else if (r.status >= 200 && r.status < 300) acc.s2xx++;
+            else if (r.status >= 300 && r.status < 400) acc.s3xx++;
+            else if (r.status >= 400 && r.status < 500) acc.s4xx++;
+            else if (r.status >= 500) acc.s5xx++;
+            return acc;
+        }, { s2xx: 0, s3xx: 0, s4xx: 0, s5xx: 0, error: 0 });
+        
         fs.writeFileSync(reportPath, JSON.stringify(data, null, 2));
-        res.json({ success: true, item: data.results[itemIndex], itemStats: data.itemStats });
+        res.json({ success: true, item, itemStats: data.itemStats, summary: data.summary });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

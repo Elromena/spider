@@ -168,6 +168,40 @@
         .result-status.s4xx { background: #fef2f2; color: #dc2626; }
         .result-status.s5xx { background: var(--danger-light); color: var(--danger); }
         .result-status.error { background: #fdf4ff; color: #d946ef; }
+        .result-status.checking { background: var(--bg-tertiary); color: var(--text-muted); animation: pulse 1s infinite; }
+        
+        .recheck-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        
+        .recheck-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+        
+        .recheck-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status-change {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-left: 0.25rem;
+        }
+        
+        .status-change.improved {
+            color: var(--success);
+        }
         
         .result-url {
             flex: 1;
@@ -441,14 +475,22 @@
                 const statusLabel = isError ? 'ERR' : status;
                 const isDone = r.itemStatus === 'done';
                 
+                // Show status change if there was one
+                let statusChange = '';
+                if (r.previousStatus && r.previousStatus !== status) {
+                    const improved = status >= 200 && status < 300 && r.previousStatus >= 400;
+                    statusChange = `<span class="status-change ${improved ? 'improved' : ''}">(was ${r.previousStatus})</span>`;
+                }
+                
                 let meta = '';
                 if (r.error) meta = r.error;
                 else if (r.finalUrl && r.finalUrl !== r.url) meta = `→ ${truncate(r.finalUrl, 40)}`;
                 
                 return `
                     <div class="result-row ${isDone ? 'done' : ''}" data-id="${r.id}" data-status="${statusClass}" data-item-status="${r.itemStatus || 'pending'}">
-                        <input type="checkbox" class="result-checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone('${r.id}', this.checked)">
-                        <span class="result-status ${statusClass}">${statusLabel}</span>
+                        <input type="checkbox" class="result-checkbox" ${isDone ? 'checked' : ''} onchange="toggleDone('${r.id}', this.checked)" title="Mark as done (will re-check URL)">
+                        <span class="result-status ${statusClass}">${statusLabel}</span>${statusChange}
+                        <button class="recheck-btn" onclick="recheckUrl('${r.id}')" title="Re-check this URL">↻</button>
                         <span class="result-url"><a href="${escapeHtml(r.url)}" target="_blank">${escapeHtml(r.url)}</a></span>
                         ${meta ? `<span class="result-meta">${escapeHtml(meta)}</span>` : ''}
                         <span class="result-notes">
@@ -471,6 +513,17 @@
         }
         
         async function toggleDone(itemId, isDone) {
+            const row = document.querySelector(`.result-row[data-id="${itemId}"]`);
+            const checkbox = row?.querySelector('.result-checkbox');
+            const statusBadge = row?.querySelector('.result-status');
+            
+            // Show loading state when marking as done (will re-check URL)
+            if (isDone && statusBadge) {
+                statusBadge.textContent = '...';
+                statusBadge.className = 'result-status';
+            }
+            if (checkbox) checkbox.disabled = true;
+            
             try {
                 const response = await fetch(`/api/status-reports/${reportId}/items/${itemId}`, {
                     method: 'PATCH',
@@ -480,22 +533,60 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Update local data
+                    // Update local data with re-checked status
                     const item = reportData.results.find(r => r.id === itemId);
-                    if (item) item.itemStatus = isDone ? 'done' : 'pending';
+                    if (item) {
+                        Object.assign(item, data.item);
+                    }
                     reportData.itemStats = data.itemStats;
+                    if (data.summary) reportData.summary = data.summary;
                     
-                    // Update UI
-                    const row = document.querySelector(`.result-row[data-id="${itemId}"]`);
+                    // Update status badge with new status
+                    const newStatus = data.item.status;
+                    const isError = data.item.error || newStatus == null;
+                    let statusClass = 'error';
+                    if (!isError) {
+                        if (newStatus >= 200 && newStatus < 300) statusClass = 's2xx';
+                        else if (newStatus >= 300 && newStatus < 400) statusClass = 's3xx';
+                        else if (newStatus >= 400 && newStatus < 500) statusClass = 's4xx';
+                        else if (newStatus >= 500) statusClass = 's5xx';
+                    }
+                    
+                    if (statusBadge) {
+                        statusBadge.textContent = isError ? 'ERR' : newStatus;
+                        statusBadge.className = `result-status ${statusClass}`;
+                    }
+                    
+                    // Update row state
                     if (row) {
                         row.classList.toggle('done', isDone);
                         row.dataset.itemStatus = isDone ? 'done' : 'pending';
+                        row.dataset.status = statusClass;
                     }
                     
+                    // Update summary counters
                     document.getElementById('sumProgress').textContent = `${data.itemStats.done}/${data.itemStats.total}`;
+                    if (data.summary) {
+                        document.getElementById('sum2xx').textContent = data.summary.s2xx || 0;
+                        document.getElementById('sum3xx').textContent = data.summary.s3xx || 0;
+                        document.getElementById('sum4xx').textContent = data.summary.s4xx || 0;
+                        document.getElementById('sum5xx').textContent = data.summary.s5xx || 0;
+                        document.getElementById('sumError').textContent = data.summary.error || 0;
+                    }
+                    
+                    // Show status change notification if status improved
+                    if (isDone && data.item.previousStatus && data.item.previousStatus !== newStatus) {
+                        showToast(`Status updated: ${data.item.previousStatus} → ${newStatus}`, 'success');
+                    } else if (isDone) {
+                        showToast('Re-checked and marked as done', 'success');
+                    }
                 }
             } catch (error) {
                 showToast('Failed to update status', 'error');
+                // Revert checkbox
+                if (checkbox) checkbox.checked = !isDone;
+            } finally {
+                if (checkbox) checkbox.disabled = false;
             }
         }
         
@@ -512,6 +603,78 @@
                 if (item) item.notes = notes;
             } catch (error) {
                 // Silent fail for notes
+            }
+        }
+        
+        async function recheckUrl(itemId) {
+            const row = document.querySelector(`.result-row[data-id="${itemId}"]`);
+            const recheckBtn = row?.querySelector('.recheck-btn');
+            const statusBadge = row?.querySelector('.result-status');
+            
+            // Show loading state
+            if (statusBadge) {
+                statusBadge.textContent = '...';
+                statusBadge.className = 'result-status checking';
+            }
+            if (recheckBtn) recheckBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/status-reports/${reportId}/items/${itemId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ recheck: true })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update local data
+                    const item = reportData.results.find(r => r.id === itemId);
+                    if (item) Object.assign(item, data.item);
+                    if (data.summary) reportData.summary = data.summary;
+                    
+                    // Update status badge
+                    const newStatus = data.item.status;
+                    const isError = data.item.error || newStatus == null;
+                    let statusClass = 'error';
+                    if (!isError) {
+                        if (newStatus >= 200 && newStatus < 300) statusClass = 's2xx';
+                        else if (newStatus >= 300 && newStatus < 400) statusClass = 's3xx';
+                        else if (newStatus >= 400 && newStatus < 500) statusClass = 's4xx';
+                        else if (newStatus >= 500) statusClass = 's5xx';
+                    }
+                    
+                    if (statusBadge) {
+                        statusBadge.textContent = isError ? 'ERR' : newStatus;
+                        statusBadge.className = `result-status ${statusClass}`;
+                    }
+                    
+                    if (row) row.dataset.status = statusClass;
+                    
+                    // Update summary counters
+                    if (data.summary) {
+                        document.getElementById('sum2xx').textContent = data.summary.s2xx || 0;
+                        document.getElementById('sum3xx').textContent = data.summary.s3xx || 0;
+                        document.getElementById('sum4xx').textContent = data.summary.s4xx || 0;
+                        document.getElementById('sum5xx').textContent = data.summary.s5xx || 0;
+                        document.getElementById('sumError').textContent = data.summary.error || 0;
+                    }
+                    
+                    // Show notification
+                    if (data.item.previousStatus && data.item.previousStatus !== newStatus) {
+                        showToast(`Status changed: ${data.item.previousStatus} → ${newStatus}`, 'success');
+                    } else {
+                        showToast(`Re-checked: ${newStatus || 'Error'}`, 'info');
+                    }
+                }
+            } catch (error) {
+                showToast('Failed to re-check URL', 'error');
+                // Restore original status
+                const item = reportData.results.find(r => r.id === itemId);
+                if (item && statusBadge) {
+                    statusBadge.textContent = item.status || 'ERR';
+                }
+            } finally {
+                if (recheckBtn) recheckBtn.disabled = false;
             }
         }
         
